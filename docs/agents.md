@@ -1,7 +1,7 @@
 # Agents
 
 You may optionally install [orchestrator-agent](https://github.com/openark/orchestrator-agent) on your MySQL hosts.
-`orchestrator-agent`* is a service which registers with your `orchestrator` server and accepts requests by `orchestrator` via web API.
+`orchestrator-agent` is a service which registers with your `orchestrator` server and accepts requests by `orchestrator` via web API.
 
 Supported requests relate to general, OS and LVM operations, such as:
 - Stopping/starting MySQL service on host
