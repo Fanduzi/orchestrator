@@ -2252,7 +2252,16 @@ func chooseCandidateReplica(replicas [](*Instance)) (candidateReplica *Instance,
 			equalReplicas = append(equalReplicas, replica)
 		} else {
 			// lost due to being more advanced/ahead of chosen replica.
-			aheadReplicas = append(aheadReplicas, replica)
+			if config.Config.MinimiseDataLoss && config.Config.DelayMasterPromotionIfSQLThreadNotUpToDate {
+				if replica.ReadBinlogCoordinates.SmallerThanOrEquals(&candidateReplica.ReadBinlogCoordinates) {
+					log.Debugf("Because MinimiseDataLoss is true. so although replica %+v is most-up-to-date than %+v, will still put it into laterReplicas", replica.Key, candidateReplica.Key)
+					laterReplicas = append(laterReplicas, replica)
+				} else {
+					aheadReplicas = append(aheadReplicas, replica)
+				}
+			} else {
+				aheadReplicas = append(aheadReplicas, replica)
+			}
 		}
 	}
 	return candidateReplica, aheadReplicas, equalReplicas, laterReplicas, cannotReplicateReplicas, err
@@ -2286,10 +2295,19 @@ func GetCandidateReplica(masterKey *InstanceKey, forRematchPurposes bool) (*Inst
 	if err != nil {
 		return candidateReplica, aheadReplicas, equalReplicas, laterReplicas, cannotReplicateReplicas, err
 	}
+	candidateReplicaIsBehindMostUpToDateReplica := false
 	if candidateReplica != nil {
 		mostUpToDateReplica := replicas[0]
 		if candidateReplica.ExecBinlogCoordinates.SmallerThan(&mostUpToDateReplica.ExecBinlogCoordinates) {
 			log.Warningf("GetCandidateReplica: chosen replica: %+v is behind most-up-to-date replica: %+v", candidateReplica.Key, mostUpToDateReplica.Key)
+			candidateReplicaIsBehindMostUpToDateReplica = true
+		}
+	}
+	if candidateReplicaIsBehindMostUpToDateReplica {
+		if config.Config.MinimiseDataLoss && (config.Config.DelayMasterPromotionIfSQLThreadNotUpToDate && !candidateReplica.SQLThreadUpToDate()) {
+			if _, err := StartReplicationAndWaitForSQLThreadUpToDate(&candidateReplica.Key); err != nil {
+				return candidateReplica, aheadReplicas, equalReplicas, laterReplicas, cannotReplicateReplicas, err
+			}
 		}
 	}
 	log.Debugf("GetCandidateReplica: candidate: %+v, ahead: %d, equal: %d, late: %d, break: %d", candidateReplica.Key, len(aheadReplicas), len(equalReplicas), len(laterReplicas), len(cannotReplicateReplicas))
