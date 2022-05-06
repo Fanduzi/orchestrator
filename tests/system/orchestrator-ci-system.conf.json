@@ -91,6 +91,7 @@
   ],
   "ConsulAddress": "127.0.0.1:8500",
   "ConsulAclToken": "",
-  "DelayMasterPromotionIfSQLThreadNotUpToDate": true,
+  "ReasonableReplicationLagSeconds": 60,
+  "DelayMasterPromotionIfSQLThreadNotUpToDate": false,
   "MinimiseDataLoss": false
 }
