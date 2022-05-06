@@ -278,6 +278,7 @@ type Configuration struct {
 	EnforceExactSemiSyncReplicas               bool              // If true, semi-sync replicas will be enabled/disabled to match the wait count in the desired priority order; this applies to LockedSemiSyncMaster and MasterWithTooManySemiSyncReplicas
 	RecoverLockedSemiSyncMaster                bool              // If true, orchestrator will recover from a LockedSemiSync state by enabling semi-sync on replicas to match the wait count; this behavior can be overridden by EnforceExactSemiSyncReplicas
 	ReasonableLockedSemiSyncMasterSeconds      uint              // Time to evaluate the LockedSemiSyncHypothesis before triggering the LockedSemiSync analysis; falls back to ReasonableReplicationLagSeconds if not set
+	MinimiseDataLoss                           bool              // To minimise data loss, when this parameter is true, the one with larger ReadBinlogCoordinates is more likely to be called candidateReplica.
 }
 
 // ToJSONString will marshal this configuration as JSON
@@ -452,6 +453,7 @@ func newConfiguration() *Configuration {
 		EnforceExactSemiSyncReplicas:               false,
 		RecoverLockedSemiSyncMaster:                false,
 		ReasonableLockedSemiSyncMasterSeconds:      0,
+		MinimiseDataLoss:                           false,
 	}
 }
 

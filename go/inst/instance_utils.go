@@ -17,6 +17,7 @@
 package inst
 
 import (
+	"github.com/openark/orchestrator/go/config"
 	"net"
 	"regexp"
 	"strconv"
@@ -121,37 +122,47 @@ func (this *InstancesSorterByExec) Less(i, j int) bool {
 	if this.instances[j] == nil {
 		return true
 	}
-	if this.instances[i].ExecBinlogCoordinates.Equals(&this.instances[j].ExecBinlogCoordinates) {
-		// Secondary sorting: "smaller" if not logging replica updates
-		if this.instances[j].LogReplicationUpdatesEnabled && !this.instances[i].LogReplicationUpdatesEnabled {
-			return true
+	isSmallerExecBinlogCoordinates := func(i, j int) bool {
+		if this.instances[i].ExecBinlogCoordinates.Equals(&this.instances[j].ExecBinlogCoordinates) {
+			// Secondary sorting: "smaller" if not logging replica updates
+			if this.instances[j].LogReplicationUpdatesEnabled && !this.instances[i].LogReplicationUpdatesEnabled {
+				return true
+			}
+			// Next sorting: "smaller" if of higher version (this will be reversed eventually)
+			// Idea is that given 5.6 a& 5.7 both of the exact position, we will want to promote
+			// the 5.6 on top of 5.7, as the other way around is invalid
+			if this.instances[j].IsSmallerMajorVersion(this.instances[i]) {
+				return true
+			}
+			// Next sorting: "smaller" if of larger binlog-format (this will be reversed eventually)
+			// Idea is that given ROW & STATEMENT both of the exact position, we will want to promote
+			// the STATEMENT on top of ROW, as the other way around is invalid
+			if this.instances[j].IsSmallerBinlogFormat(this.instances[i]) {
+				return true
+			}
+			// Prefer local datacenter:
+			if this.instances[j].DataCenter == this.dataCenter && this.instances[i].DataCenter != this.dataCenter {
+				return true
+			}
+			// Prefer if not having errant GTID
+			if this.instances[j].GtidErrant == "" && this.instances[i].GtidErrant != "" {
+				return true
+			}
+			// Prefer candidates:
+			if this.instances[j].PromotionRule.BetterThan(this.instances[i].PromotionRule) {
+				return true
+			}
 		}
-		// Next sorting: "smaller" if of higher version (this will be reversed eventually)
-		// Idea is that given 5.6 a& 5.7 both of the exact position, we will want to promote
-		// the 5.6 on top of 5.7, as the other way around is invalid
-		if this.instances[j].IsSmallerMajorVersion(this.instances[i]) {
-			return true
-		}
-		// Next sorting: "smaller" if of larger binlog-format (this will be reversed eventually)
-		// Idea is that given ROW & STATEMENT both of the exact position, we will want to promote
-		// the STATEMENT on top of ROW, as the other way around is invalid
-		if this.instances[j].IsSmallerBinlogFormat(this.instances[i]) {
-			return true
-		}
-		// Prefer local datacenter:
-		if this.instances[j].DataCenter == this.dataCenter && this.instances[i].DataCenter != this.dataCenter {
-			return true
-		}
-		// Prefer if not having errant GTID
-		if this.instances[j].GtidErrant == "" && this.instances[i].GtidErrant != "" {
-			return true
-		}
-		// Prefer candidates:
-		if this.instances[j].PromotionRule.BetterThan(this.instances[i].PromotionRule) {
-			return true
-		}
+		return this.instances[i].ExecBinlogCoordinates.SmallerThan(&this.instances[j].ExecBinlogCoordinates)
 	}
-	return this.instances[i].ExecBinlogCoordinates.SmallerThan(&this.instances[j].ExecBinlogCoordinates)
+
+	if config.Config.MinimiseDataLoss {
+		if this.instances[i].ReadBinlogCoordinates.Equals(&this.instances[j].ReadBinlogCoordinates) {
+			return isSmallerExecBinlogCoordinates(i, j)
+		}
+		return this.instances[i].ReadBinlogCoordinates.SmallerThan(&this.instances[j].ReadBinlogCoordinates)
+	}
+	return isSmallerExecBinlogCoordinates(i, j)
 }
 
 // filterInstancesByPattern will filter given array of instances according to regular expression pattern
