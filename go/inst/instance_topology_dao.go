@@ -317,7 +317,7 @@ func StartReplicationAndWaitForSQLThreadUpToDate(instanceKey *InstanceKey) (*Ins
 		return instance, fmt.Errorf("instance is not a replica: %+v", instanceKey)
 	}
 
-	// stop io_thread, start sql_thread but catch any errors
+	// start io_thread and sql_thread but catch any errors
 	for _, cmd := range []string{`start slave io_thread`, `start slave sql_thread`} {
 		if _, err := ExecInstance(instanceKey, cmd); err != nil {
 			return nil, log.Errorf("%+v: StartReplicationAndWaitForSQLThreadUpToDate: '%q' failed: %+v", *instanceKey, cmd, err)
