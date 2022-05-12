@@ -305,7 +305,7 @@ func StopReplicationNicely(instanceKey *InstanceKey, timeout time.Duration) (*In
 }
 
 // StartAndWaitForSQLThreadUpToDate starts a replica
-// It will actually START the io/sql_thread even if the replica is completely stopped.
+// It will actually START the sql_thread even if the replica is completely stopped.
 // And will wait for sql thread up to date
 func StartAndWaitForSQLThreadUpToDate(instanceKey *InstanceKey, overallTimeout time.Duration, staleCoordinatesTimeout time.Duration) (*Instance, error) {
 	instance, err := ReadTopologyInstance(instanceKey)
@@ -317,7 +317,7 @@ func StartAndWaitForSQLThreadUpToDate(instanceKey *InstanceKey, overallTimeout t
 		return instance, fmt.Errorf("instance is not a replica: %+v", instanceKey)
 	}
 
-	// stop sql_thread but catch any errors
+	// start sql_thread but catch any errors
 	for _, cmd := range []string{`start slave sql_thread`} {
 		if _, err := ExecInstance(instanceKey, cmd); err != nil {
 			return nil, log.Errorf("%+v: StartAndWaitForSQLThreadUpToDate: '%q' failed: %+v", *instanceKey, cmd, err)
