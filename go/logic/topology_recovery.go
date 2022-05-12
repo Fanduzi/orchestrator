@@ -886,7 +886,7 @@ func checkAndRecoverDeadMaster(analysisEntry inst.ReplicationAnalysis, candidate
 			//if _, err := inst.WaitForSQLThreadUpToDate(&promotedReplica.Key, 0, 0); err != nil {
 			//	return nil, fmt.Errorf("DelayMasterPromotionIfSQLThreadNotUpToDate error: %+v", err)
 			//}
-			if _, err := inst.StartAndWaitForSQLThreadUpToDate(&promotedReplica.Key); err != nil {
+			if _, err := inst.StartAndWaitForSQLThreadUpToDate(&promotedReplica.Key, 0, 0); err != nil {
 				return nil, fmt.Errorf("DelayMasterPromotionIfSQLThreadNotUpToDate error: %+v", err)
 			}
 			AuditTopologyRecovery(topologyRecovery, fmt.Sprintf("DelayMasterPromotionIfSQLThreadNotUpToDate: SQL thread caught up on %+v", promotedReplica.Key))
