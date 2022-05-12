@@ -304,10 +304,10 @@ func StopReplicationNicely(instanceKey *InstanceKey, timeout time.Duration) (*In
 	return instance, err
 }
 
-// StartReplicationAndWaitForSQLThreadUpToDate starts a replica
-// It will actually START the io/sql_thread even if the replica is completely stopped.
+// StartAndWaitForSQLThreadUpToDate starts a replica
+// It will actually START the sql_thread even if the replica is completely stopped.
 // And will wait for sql thread up to date
-func StartReplicationAndWaitForSQLThreadUpToDate(instanceKey *InstanceKey) (*Instance, error) {
+func StartAndWaitForSQLThreadUpToDate(instanceKey *InstanceKey, overallTimeout time.Duration, staleCoordinatesTimeout time.Duration) (*Instance, error) {
 	instance, err := ReadTopologyInstance(instanceKey)
 	if err != nil {
 		return instance, log.Errore(err)
@@ -317,16 +317,16 @@ func StartReplicationAndWaitForSQLThreadUpToDate(instanceKey *InstanceKey) (*Ins
 		return instance, fmt.Errorf("instance is not a replica: %+v", instanceKey)
 	}
 
-	// start io_thread and sql_thread but catch any errors
-	for _, cmd := range []string{`start slave io_thread`, `start slave sql_thread`} {
+	// start sql_thread but catch any errors
+	for _, cmd := range []string{`start slave sql_thread`} {
 		if _, err := ExecInstance(instanceKey, cmd); err != nil {
-			return nil, log.Errorf("%+v: StartReplicationAndWaitForSQLThreadUpToDate: '%q' failed: %+v", *instanceKey, cmd, err)
+			return nil, log.Errorf("%+v: StartAndWaitForSQLThreadUpToDate: '%q' failed: %+v", *instanceKey, cmd, err)
 		}
 	}
 
 	if instance.SQLDelay == 0 {
 		// Otherwise we don't bother.
-		if instance, err = WaitForSQLThreadUpToDate(instanceKey, 0, 0); err != nil {
+		if instance, err = WaitForSQLThreadUpToDate(instanceKey, overallTimeout, staleCoordinatesTimeout); err != nil {
 			return instance, err
 		}
 	}
