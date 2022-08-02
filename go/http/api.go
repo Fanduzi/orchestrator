@@ -59,6 +59,7 @@ var apiSynonyms = map[string]string{
 	"enslave-siblings":           "take-siblings",
 	"enslave-master":             "take-master",
 	"regroup-slaves-bls":         "regroup-replicas-bls",
+	"move-below-gtid":            "move-gtid",
 	"move-slaves-gtid":           "move-replicas-gtid",
 	"regroup-slaves-gtid":        "regroup-replicas-gtid",
 	"match-slaves":               "match-replicas",
@@ -843,7 +844,7 @@ func (this *HttpAPI) MoveReplicasGTID(params martini.Params, r render.Render, re
 		return
 	}
 
-	Respond(r, &APIResponse{Code: OK, Message: fmt.Sprintf("Moved %d replicas of %+v below %+v via GTID; %d errors: %+v", len(movedReplicas), instanceKey, belowKey, len(errs), errs), Details: belowKey})
+	Respond(r, &APIResponse{Code: OK, Message: fmt.Sprintf("Moved %d replicas of %+v below %+v via GTID; %d errors: %+v", len(movedReplicas), instanceKey, belowKey, len(errs), errs), Details: movedReplicas})
 }
 
 // TakeSiblings
