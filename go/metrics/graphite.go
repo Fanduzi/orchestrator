@@ -51,7 +51,7 @@ func InitGraphiteMetrics() error {
 
 	log.Debugf("Will log to graphite on %+v, %+v", config.Config.GraphiteAddr, graphitePath)
 
-	go graphite.Graphite(metrics.DefaultRegistry, 1*time.Minute, graphitePath, addr)
+	go graphite.Graphite(metrics.DefaultRegistry, time.Duration(config.Config.GraphitePollSeconds)*time.Second, graphitePath, addr)
 
 	return nil
 }

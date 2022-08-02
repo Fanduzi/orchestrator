@@ -261,6 +261,10 @@ type Configuration struct {
 	GraphitePath                               string            // Prefix for graphite path. May include {hostname} magic placeholder
 	GraphiteConvertHostnameDotsToUnderscores   bool              // If true, then hostname's dots are converted to underscores before being used in graphite path
 	GraphitePollSeconds                        int               // Graphite writes interval. 0 disables.
+	EnablePrometheusMetrics                    bool              // If true, exports prometheus style metrics in /prometheus/metrics
+	PrometheusNamespace                        string            // Prometheus namespace.
+	PrometheusSubsystem                        string            // Prometheus subsystem.
+	PrometheusFlushIntervalSeconds             int               // Prometheus flush interval seconds.
 	URLPrefix                                  string            // URL prefix to run orchestrator on non-root web path, e.g. /orchestrator to put it behind nginx.
 	DiscoveryIgnoreReplicaHostnameFilters      []string          // Regexp filters to apply to prevent auto-discovering new replicas. Usage: unreachable servers due to firewalls, applications which trigger binlog dumps
 	DiscoveryIgnoreMasterHostnameFilters       []string          // Regexp filters to apply to prevent auto-discovering a master. Usage: pointing your master temporarily to replicate some data from external host
@@ -438,6 +442,10 @@ func newConfiguration() *Configuration {
 		GraphitePath:                               "",
 		GraphiteConvertHostnameDotsToUnderscores:   true,
 		GraphitePollSeconds:                        60,
+		EnablePrometheusMetrics:                    false,
+		PrometheusNamespace:                        "",
+		PrometheusSubsystem:                        "",
+		PrometheusFlushIntervalSeconds:             10,
 		URLPrefix:                                  "",
 		DiscoveryIgnoreReplicaHostnameFilters:      []string{},
 		ConsulAddress:                              "",
@@ -618,6 +626,9 @@ func (this *Configuration) postReadAdjustments() error {
 	}
 	if this.ReasonableLockedSemiSyncMasterSeconds == 0 {
 		this.ReasonableLockedSemiSyncMasterSeconds = uint(this.ReasonableReplicationLagSeconds)
+	}
+	if this.PrometheusFlushIntervalSeconds <= 0 {
+		this.EnablePrometheusMetrics = false
 	}
 
 	return nil
