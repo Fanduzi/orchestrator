@@ -327,6 +327,7 @@ func ReadTopologyInstanceBufferable(instanceKey *InstanceKey, bufferWrites bool,
 
 	var waitGroup sync.WaitGroup
 	var serverUuidWaitGroup sync.WaitGroup
+	var metaWaitGroup sync.WaitGroup
 	readingStartTime := time.Now()
 	instance := NewInstance()
 	instanceFound := false
@@ -561,6 +562,52 @@ func ReadTopologyInstanceBufferable(instanceKey *InstanceKey, bufferWrites bool,
 		// This can be overriden by later invocation of DetectPhysicalEnvironmentQuery
 	}
 
+	if config.Config.DetectDataCenterQuery != "" && !isMaxScale {
+		metaWaitGroup.Add(1)
+		go func() {
+			defer metaWaitGroup.Done()
+			err := db.QueryRow(config.Config.DetectDataCenterQuery).Scan(&instance.DataCenter)
+			logReadTopologyInstanceError(instanceKey, "DetectDataCenterQuery", err)
+		}()
+	}
+
+	if config.Config.DetectRegionQuery != "" && !isMaxScale {
+		metaWaitGroup.Add(1)
+		go func() {
+			defer metaWaitGroup.Done()
+			err := db.QueryRow(config.Config.DetectRegionQuery).Scan(&instance.Region)
+			logReadTopologyInstanceError(instanceKey, "DetectRegionQuery", err)
+		}()
+	}
+
+	if config.Config.DetectPhysicalEnvironmentQuery != "" && !isMaxScale {
+		metaWaitGroup.Add(1)
+		go func() {
+			defer metaWaitGroup.Done()
+			err := db.QueryRow(config.Config.DetectPhysicalEnvironmentQuery).Scan(&instance.PhysicalEnvironment)
+			logReadTopologyInstanceError(instanceKey, "DetectPhysicalEnvironmentQuery", err)
+		}()
+	}
+
+	if config.Config.DetectInstanceAliasQuery != "" && !isMaxScale {
+		metaWaitGroup.Add(1)
+		go func() {
+			defer metaWaitGroup.Done()
+			err := db.QueryRow(config.Config.DetectInstanceAliasQuery).Scan(&instance.InstanceAlias)
+			logReadTopologyInstanceError(instanceKey, "DetectInstanceAliasQuery", err)
+		}()
+	}
+
+	if config.Config.DetectSemiSyncEnforcedQuery != "" && !isMaxScale {
+		metaWaitGroup.Add(1)
+		go func() {
+			defer metaWaitGroup.Done()
+			err := db.QueryRow(config.Config.DetectSemiSyncEnforcedQuery).Scan(&instance.SemiSyncPriority)
+			logReadTopologyInstanceError(instanceKey, "DetectSemiSyncEnforcedQuery", err)
+		}()
+	}
+	metaWaitGroup.Wait()
+
 	instance.ReplicationIOThreadState = ReplicationThreadStateNoThread
 	instance.ReplicationSQLThreadState = ReplicationThreadStateNoThread
 	err = sqlutils.QueryRowsMap(db, "show slave status", func(m sqlutils.RowMap) error {
@@ -747,51 +794,6 @@ func ReadTopologyInstanceBufferable(instanceKey *InstanceKey, bufferWrites bool,
 				})
 
 			logReadTopologyInstanceError(instanceKey, "ndbinfo", err)
-		}()
-	}
-
-	if config.Config.DetectDataCenterQuery != "" && !isMaxScale {
-		waitGroup.Add(1)
-		go func() {
-			defer waitGroup.Done()
-			err := db.QueryRow(config.Config.DetectDataCenterQuery).Scan(&instance.DataCenter)
-			logReadTopologyInstanceError(instanceKey, "DetectDataCenterQuery", err)
-		}()
-	}
-
-	if config.Config.DetectRegionQuery != "" && !isMaxScale {
-		waitGroup.Add(1)
-		go func() {
-			defer waitGroup.Done()
-			err := db.QueryRow(config.Config.DetectRegionQuery).Scan(&instance.Region)
-			logReadTopologyInstanceError(instanceKey, "DetectRegionQuery", err)
-		}()
-	}
-
-	if config.Config.DetectPhysicalEnvironmentQuery != "" && !isMaxScale {
-		waitGroup.Add(1)
-		go func() {
-			defer waitGroup.Done()
-			err := db.QueryRow(config.Config.DetectPhysicalEnvironmentQuery).Scan(&instance.PhysicalEnvironment)
-			logReadTopologyInstanceError(instanceKey, "DetectPhysicalEnvironmentQuery", err)
-		}()
-	}
-
-	if config.Config.DetectInstanceAliasQuery != "" && !isMaxScale {
-		waitGroup.Add(1)
-		go func() {
-			defer waitGroup.Done()
-			err := db.QueryRow(config.Config.DetectInstanceAliasQuery).Scan(&instance.InstanceAlias)
-			logReadTopologyInstanceError(instanceKey, "DetectInstanceAliasQuery", err)
-		}()
-	}
-
-	if config.Config.DetectSemiSyncEnforcedQuery != "" && !isMaxScale {
-		waitGroup.Add(1)
-		go func() {
-			defer waitGroup.Done()
-			err := db.QueryRow(config.Config.DetectSemiSyncEnforcedQuery).Scan(&instance.SemiSyncPriority)
-			logReadTopologyInstanceError(instanceKey, "DetectSemiSyncEnforcedQuery", err)
 		}()
 	}
 
