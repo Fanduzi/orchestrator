@@ -138,7 +138,6 @@ type Configuration struct {
 	ReplicationLagQuery                        string   // custom query to check on replica lg (e.g. heartbeat table). Must return a single row with a single numeric column, which is the lag.
 	ReplicationCredentialsQuery                string   // custom query to get replication credentials. Must return a single row, with five text columns: 1st is username, 2nd is password, 3rd is SSLCaCert, 4th is SSLCert, 5th is SSLKey. This is optional, and can be used by orchestrator to configure replication after master takeover or setup of co-masters. You need to ensure the orchestrator user has the privileges to run this query
 	DiscoverByShowSlaveHosts                   bool     // Attempt SHOW SLAVE HOSTS before PROCESSLIST
-	DiscoverByShowSlaveQuery                   string   // SHOW SLAVE
 	UseSuperReadOnly                           bool     // Should orchestrator super_read_only any time it sets read_only
 	InstancePollSeconds                        uint     // Number of seconds between instance reads
 	ReasonableInstanceCheckSeconds             uint     // Number of seconds an instance read is allowed to take before it is considered invalid, i.e. before LastCheckValid will be false
@@ -338,7 +337,6 @@ func newConfiguration() *Configuration {
 		UnseenInstanceForgetHours:                  240,
 		SnapshotTopologiesIntervalHours:            0,
 		DiscoverByShowSlaveHosts:                   false,
-		DiscoverByShowSlaveQuery:                   "select substring_index(host, ':', 1) as slave_hostname from information_schema.processlist where command IN ('Binlog Dump', 'Binlog Dump GTID')",
 		UseSuperReadOnly:                           false,
 		DiscoveryMaxConcurrency:                    300,
 		DiscoveryQueueCapacity:                     100000,
