@@ -2134,7 +2134,10 @@ func GracefulMasterTakeover(clusterName string, designatedKey *inst.InstanceKey,
 
 	if len(clusterMasterDirectReplicas) > 1 {
 		log.Infof("GracefulMasterTakeover: Will let %+v take over its siblings", designatedInstance.Key)
-		relocatedReplicas, _, err, _ := inst.RelocateReplicas(&clusterMaster.Key, &designatedInstance.Key, "")
+		relocatedReplicas, _, err, errs := inst.RelocateReplicas(&clusterMaster.Key, &designatedInstance.Key, "")
+		for _, e := range errs {
+			log.Errore(e)
+		}
 		if len(relocatedReplicas) != len(clusterMasterDirectReplicas)-1 {
 			// We are unable to make designated instance master of all its siblings
 			relocatedReplicasKeyMap := inst.NewInstanceKeyMap()
