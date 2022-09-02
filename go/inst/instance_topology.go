@@ -2824,11 +2824,11 @@ func relocateReplicasInternal(replicas [](*Instance), instance, other *Instance)
 	}
 	// GTID
 	{
-		movedReplicas, unmovedReplicas, err, errs := moveReplicasViaGTID(replicas, other, nil)
-
+		movedReplicas, unmovedReplicas, mErr, mErrs := moveReplicasViaGTID(replicas, other, nil)
+		errs = append(errs, mErrs...)
 		if len(movedReplicas) == len(replicas) {
 			// Moved (or tried moving) everything via GTID
-			return movedReplicas, err, errs
+			return movedReplicas, mErr, mErrs
 		} else if len(movedReplicas) > 0 {
 			// something was moved via GTID; let's try further on
 			return relocateReplicasInternal(unmovedReplicas, instance, other)
